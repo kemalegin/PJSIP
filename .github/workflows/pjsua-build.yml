@@ -1,0 +1,31 @@
+name: Build pjsua.exe (pjproject 2.16 - Win64)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Download pjproject 2.16
+        run: |
+          curl -L -o pj.zip https://github.com/pjsip/pjproject/archive/refs/tags/2.16.zip
+          tar -xf pj.zip
+
+      - name: Build (MSBuild, x64 / Release)
+        run: |
+          $sln = "$(Get-Location)\pjproject-2.16\pjproject-vs14.sln"
+          msbuild $sln /m /p:Configuration=Release /p:Platform=x64
+
+      - name: Prepare artifact
+        run: |
+          $exe = "$(Get-Location)\pjproject-2.16\pjsip-apps\bin\pjsua.exe"
+          if (!(Test-Path $exe)) { throw "pjsua.exe not found! Build failed." }
+          7z a pjsua-x64-release.zip $exe
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pjsua-x64-release
+          path: pjsua-x64-release.zip
